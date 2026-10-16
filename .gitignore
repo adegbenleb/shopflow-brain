@@ -13,3 +13,4 @@ data/
 .venv/
 __pycache__/
 *.duckdb
+.DS_Store
