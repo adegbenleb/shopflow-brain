@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShopFlow</title>
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FFFFFF;
+    --ink: #1D2430;
+    --muted: #5E6878;
+    --line: #DDE2E8;
+    --brand: #0E6B8A;
+    --spark: #F2A93B;
+    --field: #F4F6F8;
+    --danger: #B4232A;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #15191F;
+      --ink: #E7EAEE;
+      --muted: #9AA4B2;
+      --line: #2C333D;
+      --brand: #4FB3D4;
+      --spark: #F2B95E;
+      --field: #1D232B;
+      --danger: #F08A8F;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  /* Layout: a centred search page that becomes a results page after the first question */
+  .page { min-height: 100%; display: flex; flex-direction: column; }
+  .header {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 22vh 20px 24px;
+    transition: padding 420ms ease;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+  .brand img { width: 64px; height: 64px; transition: width 420ms ease, height 420ms ease; }
+  .wordmark {
+    font-size: 44px; font-weight: 600; letter-spacing: -0.03em; line-height: 1;
+    transition: font-size 420ms ease;
+  }
+  .wordmark span { color: var(--brand); }
+  .lede { margin: 14px 0 28px; color: var(--muted); font-size: 17px; text-align: center; }
+
+  form.search { width: 100%; max-width: 640px; position: relative; }
+  .search input {
+    width: 100%; padding: 16px 112px 16px 22px;
+    font: inherit; font-size: 17px; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 28px;
+    outline: none;
+  }
+  .search input:hover { border-color: var(--muted); }
+  .search input:focus-visible { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent); }
+  .search button {
+    position: absolute; right: 6px; top: 6px; bottom: 6px;
+    padding: 0 20px; border: 0; border-radius: 22px;
+    background: var(--brand); color: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .search button:disabled { opacity: 0.55; cursor: progress; }
+  .search button:focus-visible { outline: 3px solid var(--spark); outline-offset: 2px; }
+
+  .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; max-width: 680px; }
+  .suggestions button {
+    font: inherit; font-size: 14px; color: var(--ink); cursor: pointer;
+    background: var(--field); border: 1px solid transparent; border-radius: 18px; padding: 7px 14px;
+  }
+  .suggestions button:hover { border-color: var(--line); }
+  .suggestions button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  /* After the first question: compact header, results below */
+  .page.has-results .header {
+    flex-direction: row; flex-wrap: wrap; gap: 18px 28px; align-items: center;
+    padding: 18px 28px; border-bottom: 1px solid var(--line);
+  }
+  .page.has-results .brand img { width: 34px; height: 34px; }
+  .page.has-results .wordmark { font-size: 24px; }
+  .page.has-results .lede, .page.has-results .suggestions { display: none; }
+  .page.has-results form.search { max-width: 640px; flex: 1 1 360px; }
+  .page.has-results .search input { padding-top: 12px; padding-bottom: 12px; }
+
+  main.results { width: 100%; max-width: 760px; padding: 8px 28px 64px; margin-left: 174px; }
+  .entry { padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .entry:last-child { border-bottom: 0; }
+  .entry .asked { color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+  .entry .answer { margin: 0; font-size: 17px; white-space: pre-wrap; max-width: 68ch; }
+  .entry .source { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+  .entry .source b { color: var(--brand); font-weight: 600; }
+  .entry.error .answer { color: var(--danger); }
+  .thinking { display: inline-flex; gap: 5px; align-items: center; color: var(--muted); }
+  .thinking i { width: 7px; height: 7px; border-radius: 50%; background: var(--spark); animation: pulse 1s infinite ease-in-out; }
+  .thinking i:nth-child(2) { animation-delay: 0.15s; }
+  .thinking i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+  footer { margin-top: auto; padding: 18px 28px; color: var(--muted); font-size: 13px; text-align: center; }
+
+  @media (max-width: 760px) {
+    .wordmark { font-size: 36px; }
+    main.results { margin-left: 0; padding: 8px 20px 48px; }
+    .page.has-results .header { padding: 14px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <header class="header">
+    <a class="brand" href="/" aria-label="ShopFlow home">
+      <img src="/logo.svg" alt="">
+      <span class="wordmark">shop<span>flow</span></span>
+    </a>
+    <p class="lede">Ask about your customers, orders, products and sellers.</p>
+    <form class="search" id="search" autocomplete="off">
+      <label for="q" class="sr-only" style="position:absolute;left:-9999px">Your question</label>
+      <input id="q" name="q" type="text" maxlength="500" placeholder="Which categories sell the most?" required>
+      <button type="submit" id="ask">Ask</button>
+    </form>
+    <div class="suggestions" id="suggestions">
+      <button type="button">Which product categories sell the most?</button>
+      <button type="button">Which states bring the most revenue?</button>
+      <button type="button">How many deliveries in SP arrive late?</button>
+      <button type="button">What do people buy together with bed_bath_table?</button>
+    </div>
+  </header>
+  <main class="results" id="results" aria-live="polite"></main>
+  <footer>Answers come from your store data, read only. Runs on your own computer.</footer>
+</div>
+
+<script>
+  const TOOL_NAMES = {
+    sales_by_category: "Sales by category",
+    list_categories: "Category list",
+    top_products: "Top products",
+    top_customers: "Top customers",
+    customers_by_state: "Customers by state",
+    delivery_performance: "Delivery performance",
+    bought_together: "Bought together",
+  };
+  const page = document.getElementById("page");
+  const form = document.getElementById("search");
+  const input = document.getElementById("q");
+  const button = document.getElementById("ask");
+  const results = document.getElementById("results");
+
+  function entry(question) {
+    const el = document.createElement("article");
+    el.className = "entry";
+    const asked = document.createElement("p");
+    asked.className = "asked";
+    asked.textContent = question;
+    const answer = document.createElement("p");
+    answer.className = "answer";
+    answer.innerHTML = '<span class="thinking" aria-label="Looking at your data"><i></i><i></i><i></i> Looking at your data</span>';
+    el.append(asked, answer);
+    results.prepend(el);
+    return { el, answer };
+  }
+
+  async function ask(question) {
+    page.classList.add("has-results");
+    const { el, answer } = entry(question);
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "The assistant did not answer.");
+      answer.textContent = data.answer;
+      if (data.tools_used.length) {
+        const source = document.createElement("p");
+        source.className = "source";
+        const names = [...new Set(data.tools_used)].map((t) => TOOL_NAMES[t] || t);
+        source.innerHTML = "Answered with: " + names.map((n) => "<b></b>").join(", ");
+        source.querySelectorAll("b").forEach((b, i) => (b.textContent = names[i]));
+        el.append(source);
+      }
+    } catch (error) {
+      el.classList.add("error");
+      answer.textContent = error.message + " Check that Ollama, Postgres and Neo4j are running.";
+    } finally {
+      button.disabled = false;
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const question = input.value.trim();
+    if (question) ask(question);
+  });
+  document.querySelectorAll("#suggestions button").forEach((b) =>
+    b.addEventListener("click", () => ask(b.textContent))
+  );
+  input.focus();
+</script>
+</body>
+</html>
